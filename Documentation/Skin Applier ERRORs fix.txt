@@ -1,0 +1,32 @@
+Skin Applier ERRORs fix.txt
+
+Details about using the RothToo RC1 Mesh body, clothing and HUDs
+
+ERRORS
+Some grids do not allow certain scripting commands which are implemented in RothTooRC1. Below is how to modify RothTooRC1 to prevent those errors.
+
+If you are getting script errors when applying skin textures to the RothTooRC1 Mesh Body, follow these steps to resolve:
+
+Fix if you have access to a sandbox or building area:
+1) If you are in or have access to a sandbox or building area, go there.
+2) Detach your RothTooRC1 mesh body.
+3) Drag your RothTooRC1 mesh body to the ground. (Parts may be invisible if you had any AlphaCuts active when wearing it last; no problem.)
+4) Right-click edit your RothTooRC1 mesh body.
+5) Go to the "Content" tab of the edit menu.
+6) Find the Notecard named "ALLOWALPHAS".
+7) Rename that Notecard to anything else, like "DONTALLOWALPHAS"
+8) Exit edit mode.
+9) Take RothTooRC1 mesh body. (Right-click->Take)
+10) Add/Wear mesh body you just edited and test applying skin textures. Those errors should be gone now.
+
+Fix without access to a sandbox or building area:
+1) Wear/Add RothTooRC1 mesh body.
+2) Within your inventory window, find the body you just Wore/Add. You can do all this within the "Worn" tab to help you find the body you are wearing.
+3) Right-click the name of the worn body in Inventory and select "Edit".
+    a) This makes sure you are editing the right object.
+    b) It is easy to accidentally select one of the clothing/tattoo layers directly.
+4) Follow all the above instructions starting at "5)".
+5) When done with above instructions, detach body and reattach/Add.
+6) Test applying skin textures. Those errors should be gone now.
+
+

@@ -1,0 +1,5 @@
+If you are getting errors when applying skin textures, rename this file to anything but "ALLOWALPHAS"; case does not matter. (i.e. rename to "DONTALLOWALPHAS")
+
+You will likely have to also detach and reattach this mesh body, although "Reset Scripts" should also work.
+
+If you are using skins that are PNG format, you may have to edit the mesh body; go to "Texture" tab and set "Alpha mode" to "None" after you apply the skin with this HUD. You can avoid the need reset the Alpha mode by using JPEG format skins.

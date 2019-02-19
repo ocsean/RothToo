@@ -1,0 +1,23 @@
+// LowLagRadar.lsl
+
+default {
+    on_rez(integer dummy) {
+        llResetScript();
+    }
+    state_entry() {
+        llSensorRepeat("","",AGENT,92.0,PI*2,5.0);
+        llSetText("",<0.0,0.0,0.0>,1.0);
+    }
+    sensor(integer _det) {
+        string radarData = "";
+        integer x;
+        for (x = _det - 1; x >= 0; x--) {
+            radarData += llDetectedName(x) + " : " + 
+            (string) llVecDist(llGetPos(),llDetectedPos(x)) + "m\n";
+        }
+        llSetText(radarData,<0.0,0.0,0.0>,1.0); 
+    }
+    no_sensor() {
+        string radarData = "No Avatar Detected";
+    }
+}

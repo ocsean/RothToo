@@ -1,0 +1,54 @@
+// Skin_ALL_Texture_Applier_Check_Button.lsl
+
+// Texture Button Script.lsl.txt
+// Assigns all textures in it's own inventory to body on channels
+// Textures must have the names contain "lower", "upper" or "head"; case of letters doesn't matter.
+integer skin_upper_channel;
+integer skin_lower_channel;
+integer skin_head_channel;
+string crypt;
+string strTextureName;
+string strTextureKey;
+string strCommand;
+integer i;
+integer intTNum;
+integer use_channel;
+
+default {
+    link_message(integer sender_num, integer the_channel, string my_pass, key id) {
+        //llOwnerSay("Got Link Message: sender:"+(string)sender_num+", the_channel:"+(string)the_channel);
+        skin_upper_channel = -677095462;
+        skin_lower_channel = -388433722;
+        skin_head_channel = -705005084;
+        intTNum = llGetInventoryNumber(INVENTORY_TEXTURE);
+        for (i=0; i<intTNum; ++i) {
+            strTextureName = llGetInventoryName( INVENTORY_TEXTURE, i );
+            strTextureKey = llGetInventoryKey( strTextureName );
+            strCommand = "TEXTURE::"+strTextureKey;
+            strTextureName = llToUpper(strTextureName);
+            //llOwnerSay("\n\n\nTexture Key is:"+strTextureKey);
+            //llOwnerSay("strTextureName="+strTextureName);
+            if (llSubStringIndex( strTextureName, "UPPER" ) != -1) {
+                use_channel = skin_upper_channel;
+                //llOwnerSay("Upper Skin Command");
+            } else if (llSubStringIndex( strTextureName, "LOWER" ) != -1) {
+                use_channel = skin_lower_channel;
+                //llOwnerSay("Lower Skin Command");
+            } else if (llSubStringIndex( strTextureName, "HEAD" ) != -1) {
+                use_channel = skin_head_channel;
+                //llOwnerSay("Head Skin Command");
+            } else {
+                return; // Probably just an extra texture in prim contents.
+                //llOwnerSay("Error applying skin textures. Name Not found="+strTextureName);
+            }
+            //llOwnerSay("strCommand="+strCommand+" on channel:"+(string)use_channel);
+
+            //crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+            crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+            llSay(use_channel, crypt);
+            //llMessageLinked(LINK_ROOT, 0, strTextureKey, "");
+            //llOwnerSay("End of a Loop withing ForLoop of textures.\n\n\n");
+        }
+    }
+}

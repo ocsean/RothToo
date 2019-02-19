@@ -1,0 +1,35 @@
+AddingYourOwnSkin.txt
+
+RothToo RC1 HUD
+
+How to add your own skins to the HUD
+
+1) Rez HUD on the ground or somewhere you can work on it.
+    a) This makes a copy.
+    b) This updates immediately instead of later if attached.
+    c) This makes it easy to zoom around in case it's in the way.
+2) Edit the HUD. (Right-click on HUD, select Edit)
+3) Check the "Edit linked" check box on the edit menu.
+4) Select your skin button of choice by clicking on it.
+5) Select the "Content" box on the edit menu.
+6) Copy to your inventory and then delete the three textures already in that button content.
+    a) You can just delete it, but then you may not have it for later if needed.
+    b) Do not delete, remove or edit the script in that button content. 
+    c) Do not change any names or descriptions of any object within the HUD, (or body for that matter.)
+7) Copy/drag your skin textures into this button "Content" tab.
+8) Rename each of your textures to include "head", "upper" and "lower".
+    a) This new name will determine where texture each texture is applied.
+    b) Case of added name does not matter, I.e "head" same as "HeAd".
+    c) i.e. old name: "MyFavoriteSkin1" new name: "MyFavoriteHeadSkin1".
+    d) i.e. old name: "MyFavoriteSkin2" new name: "LowerMyFavoriteSkin2".
+    e) Only the texture names inside this Content have to be renamed, (not your regular inventory skins).
+9) The texture that is shown on the button can be anything you want.
+    a) This texture does not affect how/which skin textures are applied.
+    b) This texture can even be blank or default and/or any color.
+    c) This texture can even be one of the skin textures you put in Content.
+    d) Really, this button texture has no affect on the skin textures used.
+10) Stop editing the HUD
+11) Take HUD into inventory.
+12) Attach HUD and try your new skin.
+
+Note: If you have one texture that you want applied to all parts of your mesh body, (like a single color body texture), make copies of it, one for each section. i.e. one for "head", one for "upper" and one for "lower". It won't work if you try to put all three names on one texture. For example, the Skin/Alpha HUD that comes with RothToo RC1 has a green skin that is basically just a single texture "4x4_Green" that is copied to 3 separate textures with names of: 4x4_Green_HEAD, 4x4_Green_LOWER, and 4x4_Green_UPPER.

@@ -1,0 +1,335 @@
+// HUD_Skin_AlphaCutter.lsl
+
+//safe character set
+string ASCII = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+integer the_channel;
+integer skin_upper_channel; // For applying to upper skin faces
+integer skin_lower_channel; // For applying to lower skin faces
+integer skin_head_channel; // For applying to head skin faces
+integer alpha_channel; // For doing AlphaCuts to body parts.
+string my_pass;
+string strCommand;
+string strPrimCommand;
+string strPrimParameters;
+string strTextureName;
+string strTextureKey;
+
+list allPrimInfo;
+list allPrimNameInfo;
+list allPrimDescInfo;
+list listCmdPrms;
+integer intCmdPrmsLength;
+list linkParamList;
+string NameOfPrimTouched;
+string DescOfPrimTouched;
+vector ColorOfPrimTouched;
+string crypt;
+integer i;
+integer j;
+
+//tglOnColor is the highlight color for a skin button you are using /green?
+//vector         tglOnColor = <0.000, 1.000, 0.000>; //green
+//vector          tglOnColor = <0.867, 0.867, 0.867>; // Light Gray
+vector  tglOnColor = <0.502, 0.000, 0.000>; // Medium Red
+//tglOffColor undoes the highlight color, usually just white
+vector  tglOffColor = <1.000, 1.000, 1.000>; // white
+//tglOnBodyColor is the highlight color for the HUD body parts
+vector  tglOnBodyColor = <0.000, 0.000, 0.000>; // Black
+
+//convert integer to characters
+string chr(integer i) {
+    //llOwnerSay("Chr's="+llGetSubString(ASCII, i, i));
+    return llGetSubString(ASCII, i, i);
+}
+
+//for generating a random string.
+string salt(integer amount) {
+    string salt = "";
+    integer i;
+    //for length of salt , generate characters
+    for(i = 0; i < amount; i++) {
+        salt += chr((integer)llFrand(llStringLength(ASCII)));
+    }
+    //llOwnerSay("Salt="+salt);
+    return salt;
+}
+
+integer getChannelToUse( string parameter ) {
+    //llOwnerSay("Using channel:"+parameter);
+    if (parameter == "SKIN_UPPER") {
+        return skin_upper_channel;
+    } else if (parameter == "SKIN_LOWER") {
+        return skin_lower_channel;
+    } else if (parameter == "SKIN_HEAD") {
+        return skin_head_channel;
+    } else if (parameter == "ALPHACUT") {
+        return alpha_channel;
+    } else {
+        // Need a default if something is amiss
+        return skin_upper_channel;
+    }
+}
+
+/*************************************************************************************************/
+integer getPrimInfo() {
+    integer i;
+    integer j = llGetNumberOfPrims()+1;
+    allPrimInfo = [];
+    allPrimNameInfo = [];
+    allPrimDescInfo = [];
+    for (i=1;i<j; ++i) {
+        //llOwnerSay("Getting object details for link:"+(string)i);
+        //list paramlist = llGetLinkPrimitiveParams(i,[OBJECT_NAME, OBJECT_DESC]);
+        list paramlist = llGetObjectDetails(llGetLinkKey(i),[OBJECT_NAME, OBJECT_DESC]);
+        string objname = llToUpper(llList2String(paramlist,0));
+        string objdesc = llToUpper(llList2String(paramlist,1));
+        //llOwnerSay("objname="+objname+"objdesc="+objdesc);
+        //string tmp = "LINK#"+(string)i+"::"+objname+"::"+objdesc;
+        allPrimInfo += [ objname, objdesc ]; // Strided 2 list
+        allPrimNameInfo += [ objname ]; // In this list, prim name would be link # -1
+        allPrimDescInfo += [ objdesc ]; // In this list, prim desc would be link # -1
+    }
+    return TRUE;
+}
+/*************************************************************************************************/
+
+default {
+    state_entry() {
+        skin_upper_channel = -677095462;
+        skin_lower_channel = -388433722;
+        skin_head_channel = -705005084;
+
+        alpha_channel = -816372782;
+
+        //my_pass = "SfRQF1VW@nzQMiUHrd#RWmjzVIyz3lWTpEP%yi%C@$3nLn0OGp4Y9HSTbv3*aIiA";
+        //my_pass = "YS%G#^UbAKEKsze9D*l#fdC2jhBqQoHbuChBvZAdZ*1mVppN%duN2lL2D4G6Blk1";
+        my_pass = "6LQkxERkd5vi#YzN4IGb&T#EbMI8Z&RRhSfUjV1GpIbehlJ8Bps7Kn&Yb!rYN!!&";
+        getPrimInfo();
+    }
+    on_rez(integer start_param) {
+        llResetScript();
+        getPrimInfo();
+    }
+    touch_start(integer num_detected) {
+        integer link;
+
+        integer i; // 1 is always the rootprim of a linkset
+        integer x = llGetNumberOfPrims() + 1; //number of iterations
+        integer face = llDetectedTouchFace(0);
+        link = llDetectedLinkNumber(0);
+        linkParamList = llGetLinkPrimitiveParams(link,[PRIM_NAME, PRIM_DESC, PRIM_COLOR, 2]);
+        NameOfPrimTouched = llList2String(linkParamList,0);
+        DescOfPrimTouched = llList2String(linkParamList,1);
+        ColorOfPrimTouched = llList2String(linkParamList,2);
+        //llOwnerSay("\nName="+NameOfPrimTouched+"\nDesc="+DescOfPrimTouched);
+        strPrimCommand = llToUpper(NameOfPrimTouched);
+        strPrimParameters = llToUpper(DescOfPrimTouched);
+
+        //listCmdPrms = llParseString2List(strPrimCommand, [" "], []);
+        //intCmdPrmsLength = llGetListLength(listCmdPrms);
+        //strCommand = llList2String(listCmdPrms, 0);
+
+        /************************************/
+        /****** Generic HUD Commands ********/
+        /************************************/
+        if (strPrimCommand == "LABEL" || strPrimCommand == "LOGO" || 
+            strPrimCommand == "BACKGROUND" || strPrimCommand == "TITLE") {
+            //llOwnerSay("\nNon Command; return;");
+            return;
+        } else if (strPrimCommand == "OFF SWITCH") {
+            llOwnerSay("Detaching HUD");
+            llRequestPermissions(llGetOwner(), PERMISSION_ATTACH );
+            llDetachFromAvatar( );
+            return;
+        } else if (strPrimCommand == "HELP") {
+            string strHelpText = "If you want to add your own skin to the skin HUD, see the Notecard \"AddingYourOwnSkin\".\n\n";
+            strHelpText += "If you are getting errors when applying skin textures in certain grids or areas of grids, see the Notecard \"Skin Applier ERRORs fix\".";
+            llOwnerSay(strHelpText);
+            //Give owner help Notecard or say something to owner;
+            return;
+        } else if (strPrimCommand == "TAB BUTTON") {
+            //llOwnerSay("Command detected is TAB BUTTON");
+            //llOwnerSay("Parameters are: "+strPrimParameters);
+            // Flip HUD around to other side
+            float amt = 180;
+            llSetLinkPrimitiveParamsFast(1,[PRIM_ROTATION,llGetLocalRot() * llEuler2Rot(<0,0,(amt *= -1)>*DEG_TO_RAD)]);
+            return;
+        } else
+        /************************************/
+        /****** HUD Button Commands *********/
+        /************************************/
+        if (strPrimCommand == "APPLY TEXTURE") { //Skin buttons
+            // All we need to do is send a link message to that button
+            // and it will assign all 3 skins
+            //llOwnerSay("Pressed Skin button:"+strPrimParameters);
+            //llOwnerSay("Sending link msg. link is:"+(string)link);
+            llMessageLinked(link, the_channel, my_pass, "");
+            return;
+        } else if (strPrimCommand == "ALPHA-MODEL") {
+            linkParamList = llGetLinkPrimitiveParams(link,[PRIM_COLOR, face]);
+            vector bodyColorOfPrimTouched = llList2String(linkParamList,0);
+            integer alphaVal;
+            vector newColor;
+            //llOwnerSay("Pressed AlphaCut Model body part:"+strPrimParameters);
+            if (bodyColorOfPrimTouched == tglOffColor) { //tglOnColor tglOffColor
+                alphaVal=0;
+                newColor = tglOnColor;
+            } else {
+                alphaVal=1;
+                newColor = tglOffColor;
+            }
+            // Gotta recolor the model body part too
+            llSetLinkColor(link, newColor, face );// Only recolor the face touched 
+            //llOwnerSay("Name:"+NameOfPrimTouched+",\nDesc:"+DescOfPrimTouched);
+            strCommand = "ALPHA::"+DescOfPrimTouched+"::"+(string)face+"::"+(string)alphaVal;
+            //llOwnerSay("strCommand="+strCommand+" on channel:"+(string)alpha_channel);
+
+            //crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+            crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+            llSay(alpha_channel, crypt);
+            //llMessageLinked(LINK_ROOT, 0, strTextureKey, "");
+        } else if (strPrimCommand == "ALPHACUT") {
+            integer alphaVal;
+            vector newColor;
+            //Command structure+
+            // ALPHA::<PrimName>,<Face>,<AlphaVal>
+            //the_channel = getChannelToUse(strPrimCommand);
+            //strCommand = "ALPHA::";
+            //llOwnerSay("\nCmd:"+strCommand+"\nChn:"+(string)the_channel);
+            //llOwnerSay("Pressed AlphaCut button:"+strPrimParameters);
+            if (DescOfPrimTouched == "RESET") {
+                // Send reset alpha command to body
+                strCommand = "ALPHA-ALL";
+                //llOwnerSay("strCommand="+strCommand+" on channel:"+(string)alpha_channel);
+
+                //crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+                crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+                llSay(alpha_channel, crypt);
+                //llMessageLinked(LINK_ROOT, 0, strTextureKey, "");
+
+                // Gotta recolor the button itself too
+                llSetLinkColor(link, newColor, 2 ); // Button faces just happen to all be 2
+                // Gotta recolor all the AlphaCut buttons AND Model Body Parts too
+                i = 0;
+                j = llGetNumberOfPrims()+1;
+                for (; i < j; ++i) {
+                    string objname = llToUpper(llList2String(allPrimNameInfo,i));
+                    //list paramlist = llGetObjectDetails(llGetLinkKey(i), [OBJECT_NAME]);
+                    //string objname = llToUpper(llList2String(paramlist,0));
+    
+                    if (objname == "ALPHACUT") {
+                        llSetLinkPrimitiveParamsFast(i+1, [PRIM_COLOR, 2, <1.0,1.0,1.0>, 1.0]);
+                    }
+                    if (objname=="ALPHA-MODEL") {
+                        llSetLinkPrimitiveParamsFast(i+1, [PRIM_COLOR, ALL_SIDES, <1.0,1.0,1.0>, 1.0]);
+                    }
+                }
+                return;
+            }
+            if (ColorOfPrimTouched == tglOffColor) { //tglOnColor tglOffColor
+                alphaVal=0;
+                newColor = tglOnColor;
+            } else {
+                alphaVal=1;
+                newColor = tglOffColor;
+            }
+            // Gotta recolor the button pressed
+            llSetLinkColor(link, newColor, 2 ); // Button faces just happen to all be 2
+
+            //llOwnerSay("Name:"+NameOfPrimTouched+",\nDesc:"+DescOfPrimTouched);
+            list alphaParams = llParseString2List( DescOfPrimTouched, ",", "" );
+            i = 0;
+            j = llGetListLength(alphaParams);
+            for(;i < j; ++i) {
+                string alphaParam = llList2String(alphaParams, i);
+                strCommand = "ALPHA::"+alphaParam+"::"+(string)alphaVal;
+                //llOwnerSay("strCommand="+strCommand+" on channel:"+(string)alpha_channel);
+
+                //crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+                crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+                llSay(alpha_channel, crypt);
+                //llMessageLinked(LINK_ROOT, 0, strTextureKey, "");
+                
+/**************************************************************************************/
+                //Now do the colors on the HUD Model Body parts that match this command
+                integer i2 = 1;
+                integer j2 = llGetNumberOfPrims()+1;
+                for (; i2 < j2; ++i2) {
+                    string objname = llToUpper(llList2String(allPrimNameInfo,i2-1));
+                    string objdesc = llToUpper(llList2String(allPrimDescInfo,i2-1));
+                    string objsearch = llToUpper(llGetSubString(alphaParam,0,llSubStringIndex(alphaParam,"::")-1));
+                    string objface = llGetSubString( alphaParam,llSubStringIndex(alphaParam,"::")+2,-1);
+                    
+                    //llOwnerSay("\nCurrent objname="+objname+", objdesc="+objdesc+", objface="+objface);
+                    //llOwnerSay("Looking for objname==\"ALPHA-MODEL\", and objDesc=="+objsearch+"\n");
+
+                    if (objname=="ALPHA-MODEL" && objdesc == objsearch) {
+                        //llOwnerSay("\n\n\n\n");
+                        //llOwnerSay("Inside IF. Setting Alpha-Model, objdesc="+objdesc+", objface="+objface);
+                        integer linkNum = i2;
+                        llSetLinkPrimitiveParamsFast(linkNum, [PRIM_COLOR, (integer)objface, newColor, 1.0]);
+                        //llOwnerSay("\n\n\n\n");
+                    }
+                }
+/**************************************************************************************/
+                
+                
+            }
+            return;
+        } else if (strPrimCommand == "READ CONFIG") {
+            // NOT REALLY NEEDED ANYMORE
+            // NEED TO REDEFINE WHAT THIS BUTTON DOES
+            //the_channel = getChannelToUse(strPrimParameters);
+            //llOwnerSay("Pressed "+strPrimCommand+" Button");
+            return;
+        } else if (strPrimCommand == "ASSIGN SKINS") {
+            // NOT REALLY NEEDED ANYMORE
+            // NEED TO REDEFINE WHAT THIS BUTTON DOES
+            //the_channel = getChannelToUse(strPrimParameters);
+            //llOwnerSay("Pressed "+strPrimCommand+" Button");
+            return;
+        } else {
+            // Should Not be a command, just return;
+            //llOwnerSay("\nNon Command Pressed "+strPrimCommand+" Button");
+            /**** DEBUG SECTION ****
+            i = 0;
+            j = llGetListLength(allPrimNameInfo);
+            llOwnerSay("\n\n\n\n");
+            for (; i < j; ++i) {
+                //list paramlist = llGetObjectDetails(llGetLinkKey(i), [OBJECT_NAME]);
+                string objname = llToUpper(llList2String(allPrimInfo,((i*2)+0)));
+                string objdesc = llToUpper(llList2String(allPrimInfo,((i*2)+1)));
+                llOwnerSay("allPrimInfo:link#="+(string)(i+1)+", objname from list="+objname+",\nobjdesc from list="+objdesc);
+
+                objname = llToUpper(llList2String(allPrimNameInfo,i));
+                objdesc = llToUpper(llList2String(allPrimDescInfo,i));
+                llOwnerSay("allPrimName/DescInfo:link#="+(string)(i+1)+", objname from list="+objname+",\nobjdesc from list="+objdesc);
+            }
+            llOwnerSay("\n\n\n\n");
+            //*/
+            return;
+        }
+
+        // All buttons handle their own comms now.
+        // This sectio left for documenting comms.
+        //
+        // Encrypting the Command:
+        //crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+//        crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+        // Debug talking to owner
+        //llOwnerSay("\nSending CMD="+strCommand+" on channel="+(string)the_channel);
+
+        // Say the encrypted command on the correct channel
+        //llRegionSayTo(llGetOwner(), the_channel, crypt);
+//        llSay(the_channel, crypt);
+
+        // Debug: DeCrypting the data and say back to owner: Remember to remove the salt when needed ;)
+        //llOwnerSay("decrypt="+llBase64ToString(llXorBase64(crypt, llStringToBase64(my_pass)))); // SL
+        //llOwnerSay("decrypt="+llBase64ToString(llXorBase64StringsCorrect(crypt, llStringToBase64(my_pass)))); //OS
+    }
+}
