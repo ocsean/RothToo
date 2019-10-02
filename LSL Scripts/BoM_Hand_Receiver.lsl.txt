@@ -1,0 +1,205 @@
+// BoM_Hand_Receiver.lsl
+// Assigns Bakes on Mesh texture to Hands
+//*********************************************************************************    
+//**   Copyright (C) 2017  Shin Ingen
+//**   Heavily modified by Sean Heavy for Bakes on Mesh
+//**
+//**   This program is free software: you can redistribute it and/or modify
+//**   it under the terms of the GNU Affero General Public License as
+//**   published by the Free Software Foundation, either version 3 of the
+//**   License, or (at your option) any later version.
+//**
+//**   This program is distributed in the hope that it will be useful,
+//**   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**   GNU Affero General Public License for more details.
+//**
+//**   You should have received a copy of the GNU Affero General Public License
+//**   along with this program.  If not, see <https://www.gnu.org/licenses/>
+//*********************************************************************************    
+// Set debug_on_1 to 1 if you want to get debug info
+integer debug_on_1 = 0;
+//integer debug_on_1 = 1;
+//
+//safe character set for encryption
+string ASCII = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+//convert integer to characters
+string chr(integer i) {
+    if (debug_on_1 == 1) llOwnerSay("Chr's="+llGetSubString(ASCII, i, i));
+    return llGetSubString(ASCII, i, i);
+}
+
+integer min(integer x, integer y) {
+    if( y < x ) return y;
+    return x;
+}
+
+integer max(integer x, integer y) {
+    if( y > x ) return y;
+    return x;
+}
+
+//for generating a random string.
+string salt(integer amount) {
+    string salt = "";
+    integer i;
+    //for length of salt , generate characters
+    for(i = 0; i < amount; i++) {
+        salt += chr((integer)llFrand(llStringLength(ASCII)));
+    }
+    if (debug_on_1 == 1) llOwnerSay("Salt="+salt);
+    return salt;
+} 
+
+integer my_channel; // Debugging/misc
+integer skin_upper_channel;
+//integer skin_lower_channel;
+//integer skin_head_channel;
+integer leftArm_channel;
+//integer leftLeg_channel;
+integer alpha_channel;
+string my_pass;
+string dMessage;
+list listMsgNoSalt;
+string msgNoSalt;
+list listCmdPrms;
+integer intCmdPrmsLength;
+string strCommand;
+string strCommandParam1 = "";
+string strCommandParam2 = "";
+string strCommandParam3 = "";
+string strCommandParam4 = "";
+integer intLinkNum;
+string strTUUID;
+integer intFace;
+integer intAlphaMode = 0;
+integer intAlphaLevel;
+string strAlphaLevel;
+list listPrimAlphaMode;
+integer a;
+integer b;
+integer i;
+integer x;
+string descflag;
+string textureid;
+
+default {
+    state_entry() {
+        skin_upper_channel = -677095462;
+        //skin_lower_channel = -388433722;
+        //skin_head_channel = -705005084;
+        leftArm_channel = -149475421;
+        //leftLeg_channel = -240124056;
+        alpha_channel = -816372782;
+
+        my_pass = "%WTb9i#K482l&o3AHnhrhTZz3i%HT!8xL5!5H@LJnUx!8!XWeniGvifpz8j%a&*K";
+        if (debug_on_1 == 1) {
+            llOwnerSay("listening on skin channels:"+(string)skin_upper_channel);
+            //llOwnerSay("listening on skin channels:"+(string)skin_lower_channel);
+            //llOwnerSay("listening on skin channels:"+(string)skin_head_channel);
+            llOwnerSay("listening on skin channels:"+(string)leftArm_channel);
+            //llOwnerSay("listening on skin channels:"+(string)leftLeg_channel);
+            llOwnerSay("listening on alpha channel:"+(string)alpha_channel);
+        }
+        llListen(skin_upper_channel, "", "", "" );
+        //llListen(skin_lower_channel, "", "", "" );
+        //llListen(skin_head_channel, "", "", "" );
+        llListen(leftArm_channel, "", "", "" );
+        //llListen(leftLeg_channel, "", "", "" );
+        llListen(alpha_channel, "", "", "" );
+        llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
+        llStopAnimation("bentohandrelaxedP1");
+        llStartAnimation("bentohandrelaxedP1");
+    }
+
+    run_time_permissions(integer perm) {
+        if (perm & PERMISSION_TRIGGER_ANIMATION) {
+            llStopAnimation("bentohandrelaxedP1");
+            llStartAnimation("bentohandrelaxedP1");
+            llSetTimerEvent(3);
+        }
+    }
+
+    timer() {
+        llSetTimerEvent(3);
+        llStopAnimation("bentohandrelaxedP1");
+        llStartAnimation("bentohandrelaxedP1");
+    }
+
+    on_rez(integer param) {
+        llResetScript();
+    }
+
+    listen(integer channel,string name, key id, string message) {
+        if (debug_on_1 == 1) llOwnerSay("message="+message+" on channel="+(string)channel);
+        if (llGetOwnerKey(id) != llGetOwner()) {
+            llOwnerSay("Owners Don't Match");
+            return;
+        }
+        // DeCrypting the data and say back to owner: Remember to remove the salt when needed ;)
+        dMessage = llBase64ToString(llXorBase64(message, llStringToBase64(my_pass))); // SL
+        //dMessage = llBase64ToString(llXorBase64StringsCorrect(message, llStringToBase64(my_pass))); // OS
+        listMsgNoSalt = llParseString2List(dMessage, ["||"], []);
+        msgNoSalt = llList2String(listMsgNoSalt, 0);
+        if (debug_on_1 == 1) llOwnerSay("msg="+msgNoSalt);
+        listCmdPrms = llParseString2List(msgNoSalt, ["::"], []);
+        intCmdPrmsLength = llGetListLength(listCmdPrms);
+        strCommand = llList2String(listCmdPrms, 0);
+        if (intCmdPrmsLength > 1) { strCommandParam1 = llList2String(listCmdPrms, 1); }
+        if (intCmdPrmsLength > 2) { strCommandParam2 = llList2String(listCmdPrms, 2); }
+        if (intCmdPrmsLength > 3) { strCommandParam3 = llList2String(listCmdPrms, 3); }
+        if (intCmdPrmsLength > 4) { strCommandParam4 = llList2String(listCmdPrms, 4); }
+        intLinkNum = 0; // 0 is root prim
+        intFace = ALL_SIDES; // This may be modified depending on setup of item
+        intAlphaLevel = 0;
+
+        if (debug_on_1 == 1) llOwnerSay("Cmd received="+strCommand);
+        if (strCommand == "ALPHA") {
+            llOwnerSay("ALPHA commands are not suported on this Bakes On Mesh Body.");
+            return;
+        } else if (strCommand == "ALPHA-ALL") {
+            llOwnerSay("ALPHA commands are not suported on this Bakes On Mesh Body.");
+            return;
+        } else if (strCommand == "TEXTURE") {
+            if (channel == skin_upper_channel) {
+                if (debug_on_1 == 1) llOwnerSay("TEXTURE for upper cmd received");
+                // Need to iterate thru all the upper body parts
+                descflag = "UPPER";
+                textureid = strCommandParam1;
+                x = llGetNumberOfPrims()+1;
+                for (i = 0; i < x; ++i) {
+                    list paramlist = llGetObjectDetails(llGetLinkKey(i), [OBJECT_DESC,OBJECT_NAME]);
+                    string objdesc = llToUpper(llList2String(paramlist,0));
+                    string objname = llList2String(paramlist,1);
+                    if (objdesc == descflag) {
+                        if (debug_on_1 == 1) llOwnerSay("I heard your Upper message:"+descflag+" "+objdesc+" "+textureid);
+                        llSetLinkPrimitiveParamsFast(i, [PRIM_TEXTURE, ALL_SIDES, textureid, <1,1,0>, <0,0,0>, 0]);
+                        if (debug_on_1 == 1) llOwnerSay("Upper says: Changed " + objname + " texture.");
+                        llSetPrimitiveParams(
+                                [PRIM_ALPHA_MODE,ALL_SIDES,intAlphaMode,0,
+                                PRIM_COLOR, ALL_SIDES, <1.0, 1.0, 1.0>, 1.0 ]);
+                    }
+                }
+            } else if (channel == leftArm_channel) {
+                if (debug_on_1 == 1) llOwnerSay("TEXTURE for LeftArm cmd received");
+                // Need to texture to leftArm & Left Hand
+                descflag = "UPPER";
+                textureid = strCommandParam1;
+                x = llGetNumberOfPrims()+1;
+                for (i = 0; i < x; ++i) {
+                    list paramlist = llGetObjectDetails(llGetLinkKey(i), [OBJECT_DESC,OBJECT_NAME]);
+                    string objdesc = llToUpper(llList2String(paramlist,0));
+                    string objname = llList2String(paramlist,1);
+                    if (objdesc == descflag) {
+                        if (debug_on_1 == 1) llOwnerSay("I heard your Head message:"+descflag+" "+objdesc+" "+textureid);
+                        llSetLinkPrimitiveParamsFast(i, [PRIM_TEXTURE, 0, textureid, <1,1,0>, <0,0,0>, 0]);
+                        if (debug_on_1 == 1) llOwnerSay("Upper says: Changed " + objname + " texture on Face=0.");
+                        llSetPrimitiveParams(
+                                [PRIM_ALPHA_MODE,0,intAlphaMode,0,
+                                PRIM_COLOR, 0, <1.0, 1.0, 1.0>, 1.0 ]);
+                    }
+                }
+            } else { llOwnerSay("ERROR with skin channel used. Channel="+(string)channel); }
+        }
+    }
+}

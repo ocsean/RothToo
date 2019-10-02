@@ -1,0 +1,66 @@
+// BoM_LeftArm_Applier_Check_Button.lsl
+// Assigns LeftArm Bakes on Mesh texture to Upper body, LeftArm
+//*********************************************************************************    
+//**   Copyright (C) 2017  Shin Ingen
+//**   Heavily modified by Sean Heavy for Bakes on Mesh
+//**
+//**   This program is free software: you can redistribute it and/or modify
+//**   it under the terms of the GNU Affero General Public License as
+//**   published by the Free Software Foundation, either version 3 of the
+//**   License, or (at your option) any later version.
+//**
+//**   This program is distributed in the hope that it will be useful,
+//**   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**   GNU Affero General Public License for more details.
+//**
+//**   You should have received a copy of the GNU Affero General Public License
+//**   along with this program.  If not, see <https://www.gnu.org/licenses/>
+//*********************************************************************************    
+// Set debug_on_1 to 1 if you want to get debug info
+//integer debug_on_1 = 1;
+integer debug_on_1 = 0;
+//integer eyes_channel;
+integer leftArm_channel;
+//integer leftLeg_channel;
+string crypt;
+string strTextureName;
+string strTextureKey;
+string strCommand;
+integer i;
+integer intTNum;
+integer use_channel;
+
+default {
+    link_message(integer sender_num, integer the_channel, string my_pass, key id) {
+        if (debug_on_1 == 1) llOwnerSay("Got Link Message: sender:"+(string)sender_num+", the_channel:"+(string)the_channel);
+        //eyes_channel = -310475451;
+        leftArm_channel = -149475421;
+        //leftLeg_channel = -240124056;
+        intTNum = llGetInventoryNumber(INVENTORY_TEXTURE);
+        //BAKED_EYES UUID
+        //strTextureKey = "52cc6bb6-2ee5-e632-d3ad-50197b1dcb8a";
+        //BAKED_LEFTARM UUID
+        strTextureKey = "ff62763f-d60a-9855-890b-0c96f8f8cd98";
+        //BAKED_LEFTLEG UUID
+        //strTextureKey = "ae2de45c-d252-50b8-5c6e-19f39ce79317";
+        strCommand = "TEXTURE::"+strTextureKey;
+        if (debug_on_1 == 1) llOwnerSay("\n\n\nTexture Key is:"+strTextureKey);
+        
+        //use_channel = eyes_channel;
+        //if (debug_on_1 == 1) llOwnerSay("Baked Eyes Command");
+        
+        use_channel = leftArm_channel;
+        if (debug_on_1 == 1) llOwnerSay("Baked LeftArm Command");
+        
+        //use_channel = leftLeg_channel;
+        //if (debug_on_1 == 1) llOwnerSay("Baked LeftLeg Command");
+        
+        if (debug_on_1 == 1) llOwnerSay("strCommand="+strCommand+" on channel:"+(string)use_channel);
+
+        crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+        //crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+        llSay(use_channel, crypt);
+    }
+}

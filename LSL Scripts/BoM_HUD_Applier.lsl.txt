@@ -1,0 +1,196 @@
+// BoM_HUD_Applier.lsl
+//*********************************************************************************    
+//**   Copyright (C) 2017  Shin Ingen
+//**   Heavily modified by Sean Heavy for Bakes on Mesh
+//**
+//**   This program is free software: you can redistribute it and/or modify
+//**   it under the terms of the GNU Affero General Public License as
+//**   published by the Free Software Foundation, either version 3 of the
+//**   License, or (at your option) any later version.
+//**
+//**   This program is distributed in the hope that it will be useful,
+//**   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**   GNU Affero General Public License for more details.
+//**
+//**   You should have received a copy of the GNU Affero General Public License
+//**   along with this program.  If not, see <https://www.gnu.org/licenses/>
+//*********************************************************************************    
+// Set debug_on_1 to 1 if you want to get debug info
+//integer debug_on_1 = 1;
+integer debug_on_1 = 0;
+//safe character set
+string ASCII = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+integer the_channel; // The channel the HUD uses to talk to RothToo
+integer skin_upper_channel; // For applying to upper skin faces
+integer skin_lower_channel; // For applying to lower skin faces
+integer skin_head_channel; // For applying to head skin faces
+string my_pass;
+string strCommand;
+string strPrimCommand;
+string strPrimParameters;
+string strTextureName;
+string strTextureKey;
+
+list allPrimInfo;
+list allPrimNameInfo;
+list allPrimDescInfo;
+list listCmdPrms;
+integer intCmdPrmsLength;
+list linkParamList;
+string NameOfPrimTouched;
+string DescOfPrimTouched;
+vector ColorOfPrimTouched;
+string crypt;
+integer i;
+integer j;
+
+//convert integer to characters
+string chr(integer i) {
+    if (debug_on_1 == 1) llOwnerSay("Chr's="+llGetSubString(ASCII, i, i));
+    return llGetSubString(ASCII, i, i);
+}
+
+//for generating a random string.
+string salt(integer amount) {
+    string salt = "";
+    integer i;
+    //for length of salt , generate characters
+    for(i = 0; i < amount; i++) {
+        salt += chr((integer)llFrand(llStringLength(ASCII)));
+    }
+    if (debug_on_1 == 1) llOwnerSay("Salt="+salt);
+    return salt;
+}
+
+integer getChannelToUse( string parameter ) {
+    if (debug_on_1 == 1) llOwnerSay("Using channel:"+parameter);
+    if (parameter == "SKIN_UPPER") {
+        if (debug_on_1 == 1) llOwnerSay("Using channel #"+(string)skin_upper_channel);
+        return skin_upper_channel;
+    } else if (parameter == "SKIN_LOWER") {
+        if (debug_on_1 == 1) llOwnerSay("Using channel #"+(string)skin_lower_channel);
+        return skin_lower_channel;
+    } else if (parameter == "SKIN_HEAD") {
+        if (debug_on_1 == 1) llOwnerSay("Using channel #"+(string)skin_head_channel);
+        return skin_head_channel;
+    } else {
+        // Need a default if something is amiss
+        if (debug_on_1 == 1) llOwnerSay("Using channel #"+(string)skin_upper_channel);
+        return skin_upper_channel;
+    }
+}
+
+integer getPrimInfo() {
+    integer i;
+    integer j = llGetNumberOfPrims()+1;
+    allPrimInfo = [];
+    allPrimNameInfo = [];
+    allPrimDescInfo = [];
+    for (i=1;i<j; ++i) {
+        if (debug_on_1 == 1) llOwnerSay("Getting object details for link:"+(string)i);
+        //list paramlist = llGetLinkPrimitiveParams(i,[OBJECT_NAME, OBJECT_DESC]);
+        list paramlist = llGetObjectDetails(llGetLinkKey(i),[OBJECT_NAME, OBJECT_DESC]);
+        string objname = llToUpper(llList2String(paramlist,0));
+        string objdesc = llToUpper(llList2String(paramlist,1));
+        if (debug_on_1 == 1) llOwnerSay("objname="+objname+"objdesc="+objdesc);
+        //string tmp = "LINK#"+(string)i+"::"+objname+"::"+objdesc;
+        allPrimInfo += [ objname, objdesc ]; // Strided 2 list
+        allPrimNameInfo += [ objname ]; // In this list, prim name would be link # -1
+        allPrimDescInfo += [ objdesc ]; // In this list, prim desc would be link # -1
+    }
+    return TRUE;
+}
+
+default {
+    state_entry() {
+        skin_upper_channel = -677095462;
+        skin_lower_channel = -388433722;
+        skin_head_channel = -705005084;
+
+        my_pass = "%WTb9i#K482l&o3AHnhrhTZz3i%HT!8xL5!5H@LJnUx!8!XWeniGvifpz8j%a&*K";
+
+        getPrimInfo();
+    }
+    on_rez(integer start_param) {
+        llResetScript();
+        getPrimInfo();
+    }
+    touch_start(integer num_detected) {
+        integer link;
+
+        integer i; // 1 is always the rootprim of a linkset
+        integer x = llGetNumberOfPrims() + 1; //number of iterations
+        integer face = llDetectedTouchFace(0);
+        link = llDetectedLinkNumber(0);
+        linkParamList = llGetLinkPrimitiveParams(link,[PRIM_NAME, PRIM_DESC, PRIM_COLOR, 2]);
+        NameOfPrimTouched = llList2String(linkParamList,0);
+        DescOfPrimTouched = llList2String(linkParamList,1);
+        ColorOfPrimTouched = llList2Vector(linkParamList,2);
+        if (debug_on_1 == 1) llOwnerSay("\nName="+NameOfPrimTouched+"\nDesc="+DescOfPrimTouched);
+        strPrimCommand = llToUpper(NameOfPrimTouched);
+        strPrimParameters = llToUpper(DescOfPrimTouched);
+
+        /************************************/
+        /****** Generic HUD Commands ********/
+        /************************************/
+        if (strPrimCommand == "LABEL" || strPrimCommand == "LOGO" || 
+            strPrimCommand == "BACKGROUND" || strPrimCommand == "TITLE") {
+            if (debug_on_1 == 1) llOwnerSay("\nNon Command; return;");
+            return;
+        } else if (strPrimCommand == "OFF SWITCH") {
+            llOwnerSay("Detaching HUD");
+            llRequestPermissions(llGetOwner(), PERMISSION_ATTACH );
+            llDetachFromAvatar( );
+            return;
+        } else if (strPrimCommand == "HELP") {
+            string strHelpText = "Click on square buttons below labels to set each of those body parts to Bakes On Mesh.\nTo remove the \"Baked LeftArm\" and/or \"Baked LeftLeg\" click on the square box below labels: \"Baked Upper\" and/or \"Baked Lower\".";
+            llOwnerSay(strHelpText);
+            return;
+        } else if (strPrimCommand == "INFO1") {
+            llOwnerSay("This is the label for Bakes on Mesh HEAD");
+            return;
+        } else if (strPrimCommand == "INFO2") {
+            llOwnerSay("This is the label for Bakes on Mesh UPPER");
+            llOwnerSay("If you set Baked Upper, it will make all of the upper to BAKED_UPPER.");
+            llOwnerSay("You will have to reset Baked LeftArm if wanted");
+            return;
+        } else if (strPrimCommand == "INFO3") {
+            llOwnerSay("This is the label for Bakes on Mesh LOWER");
+            llOwnerSay("If you set Baked Lower, it will make all of the lower to BAKED_LOWER.");
+            llOwnerSay("You will have to reset Baked LeftLeg if wanted");
+            return;
+        } else if (strPrimCommand == "INFO4") {
+            llOwnerSay("This is the label for Bakes on Mesh EYES");
+            llOwnerSay("Wear a classic eye body-part to change your eye color.");
+            return;
+        } else if (strPrimCommand == "INFO5") {
+            llOwnerSay("This is the label for Bakes on Mesh LEFTARM");
+            llOwnerSay("If you set Baked LeftArm, be sure to wear a specific LeftArm wearable or your left arm will be gray.");
+            llOwnerSay("To remove the \"Baked LeftArm\" click on the square box below label: \"Baked Upper\".");
+            return;
+        } else if (strPrimCommand == "INFO6") {
+            llOwnerSay("This is the label for Bakes on Mesh LEFTLEG");
+            llOwnerSay("If you set Baked LeftLeg, be sure to wear a specific LeftLeg wearable or your left leg will be gray.");
+            llOwnerSay("To remove the \"Baked LeftLeg\" click on the square box below label: \"Baked Lower\".");
+            return;
+        } else
+        /************************************/
+        /****** HUD Button Commands *********/
+        /************************************/
+        if (strPrimCommand == "APPLY TEXTURE") { //Skin buttons
+            // All we need to do is send a link message to that button
+            // and it will assign skin
+            if (debug_on_1 == 1) llOwnerSay("Pressed Skin button:"+strPrimParameters);
+            if (debug_on_1 == 1) llOwnerSay("Sending link msg. link is:"+(string)link);
+            llMessageLinked(link, the_channel, my_pass, "");
+            return;
+        } else {
+            // Should Not be a command, just return;
+            if (debug_on_1 == 1) llOwnerSay("\nNon Command Pressed "+strPrimCommand+" Button");
+            return;
+        }
+        // All buttons handle their own comms now.
+    }
+}

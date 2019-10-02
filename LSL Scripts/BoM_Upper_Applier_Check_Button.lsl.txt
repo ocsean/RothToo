@@ -1,0 +1,66 @@
+// BoM_Upper_Applier_Check_Button.lsl
+// Assigns Bakes on Mesh textures to Upper body
+//*********************************************************************************    
+//**   Copyright (C) 2017  Shin Ingen
+//**   Heavily modified by Sean Heavy for Bakes on Mesh
+//**
+//**   This program is free software: you can redistribute it and/or modify
+//**   it under the terms of the GNU Affero General Public License as
+//**   published by the Free Software Foundation, either version 3 of the
+//**   License, or (at your option) any later version.
+//**
+//**   This program is distributed in the hope that it will be useful,
+//**   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**   GNU Affero General Public License for more details.
+//**
+//**   You should have received a copy of the GNU Affero General Public License
+//**   along with this program.  If not, see <https://www.gnu.org/licenses/>
+//*********************************************************************************    
+// Set debug_on_1 to 1 if you want to get debug info
+//integer debug_on_1 = 1;
+integer debug_on_1 = 0;
+integer skin_upper_channel;
+//integer skin_lower_channel;
+//integer skin_head_channel;
+string crypt;
+string strTextureName;
+string strTextureKey;
+string strCommand;
+integer i;
+integer intTNum;
+integer use_channel;
+
+default {
+    link_message(integer sender_num, integer the_channel, string my_pass, key id) {
+        if (debug_on_1 == 1) llOwnerSay("Got Link Message: sender:"+(string)sender_num+", the_channel:"+(string)the_channel);
+        skin_upper_channel = -677095462;
+        //skin_lower_channel = -388433722;
+        //skin_head_channel = -705005084;
+        intTNum = llGetInventoryNumber(INVENTORY_TEXTURE);
+        //Head BoM UUID
+        //strTextureKey = "5a9f4a74-30f2-821c-b88d-70499d3e7183";
+        //Lower BoM UUID
+        //strTextureKey = "24daea5f-0539-cfcf-047f-fbc40b2786ba";
+        //Upper BoM UUID
+        strTextureKey = "ae2de45c-d252-50b8-5c6e-19f39ce79317";
+        strCommand = "TEXTURE::"+strTextureKey;
+        if (debug_on_1 == 1) llOwnerSay("\n\n\nTexture Key is:"+strTextureKey);
+        
+        use_channel = skin_upper_channel;
+        if (debug_on_1 == 1) llOwnerSay("Upper Skin Command");
+        
+        //use_channel = skin_lower_channel;
+        //if (debug_on_1 == 1) llOwnerSay("Lower Skin Command");
+        
+        //use_channel = skin_head_channel;
+        //if (debug_on_1 == 1) llOwnerSay("Head Skin Command");
+        
+        if (debug_on_1 == 1) llOwnerSay("strCommand="+strCommand+" on channel:"+(string)use_channel);
+
+        crypt = llXorBase64(llStringToBase64(strCommand), llStringToBase64(my_pass)); // SL
+        //crypt = llXorBase64StringsCorrect(llStringToBase64(strCommand), llStringToBase64(my_pass)); // OS
+
+        llSay(use_channel, crypt);
+    }
+}
